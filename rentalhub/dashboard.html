@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!--
+  FILE: dashboard.html
+  PURPOSE: The PROTECTED user dashboard.
+           Only logged-in users can access this page.
+           If not logged in → automatically redirected to login.html
+
+  FEATURES:
+           - Browse and filter rental listings
+           - Click to open booking modal
+           - Select dates and see price preview
+           - Create booking and upload payment proof
+           - View "My Bookings" tab with booking status
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – RentHub PH</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ── NAVIGATION ─────────────────────────────────────────── -->
+  <header>
+    <nav class="navbar">
+      <div class="nav-inner">
+
+        <a href="dashboard.html" class="nav-logo">Rent<span>Hub</span> PH</a>
+
+        <!-- Tab-style navigation links -->
+        <ul class="nav-links">
+          <li><a href="#" onclick="switchTab('browse'); return false;">Browse</a></li>
+          <li><a href="#" onclick="switchTab('bookings'); return false;">My Bookings</a></li>
+        </ul>
+
+        <!-- User info + logout -->
+        <div class="nav-actions">
+          <span id="userGreeting" style="font-size:14px; font-weight:600; color:var(--text-muted);"></span>
+          <button class="btn btn-outline btn-sm" onclick="logoutUser()">
+            🚪 Logout
+          </button>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+
+  <!-- ── DASHBOARD LAYOUT ────────────────────────────────────── -->
+  <div class="dashboard-layout">
+
+    <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+    <aside class="sidebar">
+
+      <!-- User info card in sidebar -->
+      <div class="sidebar-user" id="sidebarUser">
+        <div class="avatar">👤</div>
+        <h4 id="sidebarName">Loading...</h4>
+        <p id="sidebarEmail">...</p>
+      </div>
+
+      <!-- Sidebar navigation links -->
+      <ul class="sidebar-nav">
+        <li>
+          <a href="#" class="active" onclick="switchTab('browse'); return false;" data-tab="browse">
+            🗂️ Browse Rentals
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="switchTab('bookings'); return false;" data-tab="bookings">
+            📋 My Bookings
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="logoutUser()">
+            🚪 Logout
+          </a>
+        </li>
+      </ul>
+
+    </aside>
+
+    <!-- ── MAIN CONTENT AREA ──────────────────────────────── -->
+    <main class="main-content">
+
+      <!-- ── TAB: BROWSE RENTALS ─────────────────────────── -->
+      <div id="tab-browse" class="tab-content">
+
+        <div class="page-header">
+          <div>
+            <h2>🏪 Available Rentals</h2>
+            <p>Browse our listings and book what you need.</p>
+          </div>
+        </div>
+
+        <!-- Category filter buttons (rendered by JS) -->
+        <div id="categoryFilters" class="filter-bar"></div>
+
+        <!-- Rental cards grid (rendered by JS) -->
+        <div id="rentalsGrid" class="rentals-grid">
+          <p class="empty-state">Loading rentals...</p>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: MY BOOKINGS ────────────────────────────── -->
+      <div id="tab-bookings" class="tab-content" style="display:none;">
+
+        <div class="page-header">
+          <div>
+            <h2>📋 My Bookings</h2>
+            <p>Track the status of your rental reservations.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="renderMyBookings()">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <!-- Legend for status badges -->
+        <div class="panel" style="display:flex; gap:12px; flex-wrap:wrap; padding:16px 20px; margin-bottom:20px;">
+          <span class="badge badge-pending">⏳ Pending</span>
+          <span style="font-size:13px; color:var(--text-muted)">= Awaiting admin review</span>
+          &nbsp;&nbsp;
+          <span class="badge badge-approved">✅ Approved</span>
+          <span style="font-size:13px; color:var(--text-muted)">= Booking confirmed!</span>
+          &nbsp;&nbsp;
+          <span class="badge badge-rejected">❌ Rejected</span>
+          <span style="font-size:13px; color:var(--text-muted)">= Not approved</span>
+        </div>
+
+        <!-- Booking list (rendered by JS) -->
+        <div id="myBookings">
+          <p class="empty-state">Loading bookings...</p>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── RENTAL DETAIL MODAL ────────────────────────────────── -->
+  <!-- Hidden by default. Opens when user clicks "Book Now" on a card. -->
+  <div id="rentalModal" class="modal-overlay" onclick="handleModalClick(event)">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <!-- Modal content is injected here by app.js -->
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- ── SCRIPTS ────────────────────────────────────────────── -->
+  <!-- Order matters! Load data first, then utilities, then app -->
+  <script src="data/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/booking.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // ── PAGE INITIALIZATION ────────────────────────────────
+    // Runs when the page has fully loaded
+    window.addEventListener("DOMContentLoaded", () => {
+
+      // 1. Check authentication (redirects to login if not logged in)
+      const user = requireAuth(false);
+      if (!user) return; // Stop if not authenticated
+
+      // 2. Populate sidebar and navbar with user info
+      document.getElementById("sidebarName").textContent  = user.name;
+      document.getElementById("sidebarEmail").textContent = user.email;
+      document.getElementById("userGreeting").textContent = `Hi, ${user.name.split(" ")[0]}! 👋`;
+
+      // Show emoji avatar based on user
+      const avatarEl = document.querySelector(".sidebar-user .avatar");
+      if (avatarEl) avatarEl.textContent = user.avatar || "👤";
+
+      // 3. Initialize the main dashboard content
+      initDashboard();
+
+    });
+
+    // ── CLOSE MODAL BY CLICKING OUTSIDE IT ────────────────
+    function handleModalClick(event) {
+      // If the click is directly on the overlay (not inside the box)
+      if (event.target.id === "rentalModal") {
+        closeModal();
+      }
+    }
+
+    // ── HIGHLIGHT ACTIVE SIDEBAR LINK ─────────────────────
+    // Update sidebar active state when switching tabs
+    const origSwitchTab = switchTab;
+    switchTab = function(tabName) {
+      origSwitchTab(tabName); // Call original function
+
+      // Update sidebar link styles
+      document.querySelectorAll(".sidebar-nav a[data-tab]").forEach(a => {
+        a.classList.toggle("active", a.dataset.tab === tabName);
+      });
+    };
+  </script>
+
+</body>
+</html>

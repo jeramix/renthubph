@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<!--
+  FILE: login.html
+  PURPOSE: The login page.
+           Shows a simulated "Google Login" experience.
+           Users pick a demo account from a dropdown to test the app.
+
+  REAL GOOGLE AUTH UPGRADE:
+           Replace the <select> + button with Firebase:
+           import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+           const provider = new GoogleAuthProvider();
+           signInWithPopup(auth, provider).then(result => { ... });
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – RentHub PH</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Two-column layout: left = visual, right = form -->
+  <div class="login-page">
+
+    <!-- ── LEFT: DECORATIVE VISUAL ──────────────────────── -->
+    <div class="login-visual">
+
+      <div style="font-size:5rem; margin-bottom:24px;">🔑</div>
+
+      <h1>Welcome Back!</h1>
+      <p style="margin-bottom:40px;">
+        Log in to browse rentals, book equipment, vehicles, rooms, and more.
+      </p>
+
+      <!-- Mini feature list -->
+      <div style="text-align:left; width:100%; max-width:320px;">
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; background:rgba(255,255,255,.1); padding:14px; border-radius:12px;">
+          <span style="font-size:1.5rem">📷</span>
+          <div>
+            <div style="font-weight:700; font-size:14px;">Equipment Rentals</div>
+            <div style="font-size:12px; opacity:.7;">Cameras, drones, and more</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; background:rgba(255,255,255,.1); padding:14px; border-radius:12px;">
+          <span style="font-size:1.5rem">🚙</span>
+          <div>
+            <div style="font-weight:700; font-size:14px;">Vehicles</div>
+            <div style="font-size:12px; opacity:.7;">Cars, scooters, and SUVs</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.1); padding:14px; border-radius:12px;">
+          <span style="font-size:1.5rem">🏠</span>
+          <div>
+            <div style="font-weight:700; font-size:14px;">Rooms & Venues</div>
+            <div style="font-size:12px; opacity:.7;">Studios, halls, and spaces</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT: LOGIN FORM ─────────────────────────────── -->
+    <div class="login-form-side">
+      <div class="login-box">
+
+        <!-- Logo -->
+        <a href="index.html" class="nav-logo" style="display:block; margin-bottom:32px; font-size:24px;">
+          Rent<span>Hub</span> PH
+        </a>
+
+        <h2>Sign In</h2>
+        <p class="sub">Access your bookings and browse rentals.</p>
+
+        <!-- ── SIMULATED GOOGLE LOGIN ────────────────────── -->
+        <!--
+          In a REAL app, this button would open a Google
+          popup window to authenticate your Google account.
+          For now, we simulate it with a dropdown selector.
+        -->
+        <button class="google-btn" onclick="toggleDemoSelector()">
+          <span style="font-size:1.3rem">🟢</span>
+          Continue with Google
+        </button>
+
+        <!-- Demo account selector — shown after clicking the button -->
+        <div id="demoSelector" style="display:none;">
+
+          <div class="divider-text">Demo Mode — Pick an Account</div>
+
+          <div class="form-group">
+            <label for="accountSelect">Select a Test Account</label>
+            <select id="accountSelect">
+              <option value="">-- Choose an account --</option>
+              <option value="admin@renthub.com">👨‍💼 Admin User (admin@renthub.com)</option>
+              <option value="juan@gmail.com">👤 Juan dela Cruz (user)</option>
+              <option value="maria@gmail.com">👩 Maria Santos (user)</option>
+            </select>
+          </div>
+
+          <div id="loginError" style="color:var(--danger); font-size:13px; margin-bottom:12px; display:none;">
+            ⚠️ Please select an account.
+          </div>
+
+          <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">
+            ✅ Log In as Selected Account
+          </button>
+
+          <!-- Hint about real auth -->
+          <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:16px; line-height:1.6;">
+            🔒 <strong>Demo mode only.</strong><br>
+            Real Google OAuth can be enabled via Firebase.<br>
+            See <code>js/auth.js</code> for upgrade instructions.
+          </p>
+
+        </div>
+
+        <!-- Back to landing -->
+        <p style="text-align:center; margin-top:24px; font-size:14px; color:var(--text-muted);">
+          <a href="index.html">← Back to Homepage</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SCRIPTS ────────────────────────────────────────────── -->
+  <!-- Load data first, then auth functions -->
+  <script src="data/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+
+    // ── TOGGLE DEMO SELECTOR ───────────────────────────────
+    // Shows the account picker when user clicks "Continue with Google"
+    function toggleDemoSelector() {
+      const selector = document.getElementById("demoSelector");
+      selector.style.display = selector.style.display === "none" ? "block" : "none";
+    }
+
+    // ── HANDLE LOGIN BUTTON CLICK ──────────────────────────
+    function handleLogin() {
+      const email    = document.getElementById("accountSelect").value;
+      const errorEl  = document.getElementById("loginError");
+
+      // Validate that an account was selected
+      if (!email) {
+        errorEl.style.display = "block";
+        return;
+      }
+
+      errorEl.style.display = "none";
+
+      // Try to log in using our auth.js function
+      const result = simulateGoogleLogin(email);
+
+      if (result.success) {
+        // Show a brief success message then redirect
+        document.querySelector(".login-box").innerHTML = `
+          <div style="text-align:center; padding:40px 0;">
+            <div style="font-size:4rem; margin-bottom:16px;">✅</div>
+            <h2>Welcome, ${result.user.name.split(" ")[0]}!</h2>
+            <p style="color:var(--text-muted);">Redirecting you now...</p>
+          </div>
+        `;
+
+        // Redirect after 1 second
+        setTimeout(() => redirectAfterLogin(result.user), 1000);
+      } else {
+        errorEl.textContent = "❌ " + result.message;
+        errorEl.style.display = "block";
+      }
+    }
+
+    // ── AUTO-REDIRECT IF ALREADY LOGGED IN ─────────────────
+    // If user is already logged in, skip the login page
+    window.addEventListener("DOMContentLoaded", () => {
+      const user = getCurrentUser();
+      if (user) redirectAfterLogin(user);
+    });
+
+  </script>
+
+</body>
+</html>
